@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>যুলোজি অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "মাথার খুলিতে কয়টি হাড় রয়েছে?",
+          options: {
+            a: "২৩",
+            b: "৩৩",
+            c: "২৯",
+            d: "১৭",
+          },
+          correct: "c",
+          explanation:
+            "<p>মাথার খুলিতে (Skull) মোট <strong>২৯টি</strong> হাড় রয়েছে। এর মধ্যে ৮টি করোটিকা অস্থি, ১৪টি মুখমণ্ডলীয় অস্থি এবং ৬টি কর্ণাস্থি (প্রতি কানে ৩টি) এবং ১টি হাইওয়েড অস্থি।</p>",
+        },
+        {
+          id: 2,
+          question: "মানুষের মুখমণ্ডলে কতগুলো অস্থি আছে?",
+          options: {
+            a: "১০",
+            b: "২৩",
+            c: "১৪",
+            d: "০৮",
+          },
+          correct: "c",
+          explanation:
+            "<p>মানুষের মুখমণ্ডলে <strong>১৪টি</strong> অস্থি আছে।</p>",
+        },
+        {
+          id: 3,
+          question: "কোনটি মানুষের মুখমণ্ডলীয় অস্থি নয়?",
+          options: {
+            a: "টেম্পোরাল",
+            b: "ম্যাক্সিলা",
+            c: "এথময়েড",
+            d: "ম্যান্ডিবল",
+          },
+          correct: "c",
+          explanation:
+            "<p><strong>এথময়েড</strong> (Ethmoid) মানুষের মুখমণ্ডলীয় অস্থি নয়, এটি করোটিকার অস্থি। টেম্পোরালও করোটিকার অস্থি, যদিও এর কিছু অংশ মুখমণ্ডলের কাছাকাছি। ম্যাক্সিলা এবং ম্যান্ডিবল মুখমণ্ডলীয় অস্থি।</p>",
+        },
+        {
+          id: 4,
+          question: "নিচের কোনটি করোটির অস্থি নয়?",
+          options: {
+            a: "প্যারাইটাল",
+            b: "অক্সিপিটাল",
+            c: "স্ফেনয়েড",
+            d: "ট্রান্সভার্স প্রসেস",
+          },
+          correct: "d",
+          explanation:
+            "<p><strong>ট্রান্সভার্স প্রসেস</strong> (Transverse process) করোটির অস্থি নয়। এটি মেরুদণ্ডের কশেরুকার একটি অংশ। প্যারাইটাল, অক্সিপিটাল এবং স্ফেনয়েড হলো করোটির অস্থি।</p>",
+        },
+        {
+          id: 5,
+          question: "করোটিকার মেঝে গঠনকারী অস্থি কোনটি?",
+          options: {
+            a: "ফ্রন্টাল",
+            b: "প্যারাইটাল",
+            c: "স্ফেনয়েড",
+            d: "অক্সিপিটাল",
+          },
+          correct: "c",
+          explanation:
+            "<p>করোটিকার মেঝে গঠনকারী অস্থিগুলোর মধ্যে <strong>স্ফেনয়েড</strong> (Sphenoid) অন্যতম। এটি একটি জটিল আকৃতির অস্থি যা খুলির গোড়ায় কেন্দ্রীয় অবস্থানে থাকে।</p>",
+        },
+        {
+          id: 6,
+          question: "ফোরামেন ম্যাগনাম কোথায় থাকে?",
+          options: {
+            a: "বক্ষ অস্থিচক্রে",
+            b: "করোটিতে",
+            c: "বক্ষপিঞ্জরে",
+            d: "শ্রোণিচক্রে",
+          },
+          correct: "b",
+          explanation:
+            "<p><strong>ফোরামেন ম্যাগনাম</strong> (Foramen magnum) <strong>করোটিতে</strong> (Skull) থাকে। এটি অক্সিপিটাল অস্থির একটি বড় ছিদ্র যার মধ্য দিয়ে স্পাইনাল কর্ড মস্তিষ্ক থেকে বের হয়।</p>",
+        },
+        {
+          id: 7,
+          question: "নিচের কোনটি মানুষের অক্ষীয় কঙ্কালতন্ত্রের অংশ?",
+          options: {
+            a: "শ্রোণি অস্থিচক্র",
+            b: "বক্ষ অস্থিচক্র",
+            c: "করোটি",
+            d: "ফিমার",
+          },
+          correct: "c",
+          explanation:
+            "<p>মানুষের অক্ষীয় কঙ্কালতন্ত্রের (Axial skeleton) অংশ হলো <strong>করোটি</strong> (Skull)। শ্রোণি অস্থিচক্র, বক্ষ অস্থিচক্র এবং ফিমার হলো উপাঙ্গীয় কঙ্কালতন্ত্রের (Appendicular skeleton) অংশ।</p>",
+        },
+        {
+          id: 8,
+          question: "মানুষের করোটিকাতে কতগুলো অস্থি আছে?",
+          options: {
+            a: "১২",
+            b: "১৭",
+            c: "৪",
+            d: "১০",
+          },
+          correct: "a",
+          explanation:
+            "<p>মানুষের করোটিকাতে (Cranium) <strong>৮টি</strong> অস্থি আছে (ফ্রন্টাল, অক্সিপিটাল, ২টি প্যারাইটাল, ২টি টেম্পোরাল, স্ফেনয়েড, এথময়েড)। প্রশ্নে দেওয়া বিকল্পগুলির মধ্যে 12 (A) ভুল। মানুষের করোটি মোট ২৯টি অস্থি নিয়ে গঠিত, যার মধ্যে ৮টি করোটিকার, ১৪টি মুখমণ্ডলীয়, ৬টি কর্ণাস্থি এবং ১টি হাইওয়েড অস্থি।</p>",
+        },
+        {
+          id: 9,
+          question: "মানুষের কপাল কোন অস্থি দিয়ে তৈরি হয়?",
+          options: {
+            a: "অক্সিপিটাল",
+            b: "ফ্রন্টাল",
+            c: "প্যারাইটাল",
+            d: "টেম্পোরাল",
+          },
+          correct: "b",
+          explanation:
+            "<p>মানুষের কপাল <strong>ফ্রন্টাল</strong> (Frontal) অস্থি দিয়ে তৈরি হয়।</p>",
+        },
+        {
+          id: 10,
+          question: "স্ফেনয়েড অস্থি কঙ্কালের কোন অংশে থাকে?",
+          options: {
+            a: "করোটিকা",
+            b: "মুখমণ্ডল",
+            c: "পেকটোরাল গার্ডল",
+            d: "মেরুদণ্ড",
+          },
+          correct: "a",
+          explanation:
+            "<p><strong>স্ফেনয়েড অস্থি</strong> (Sphenoid bone) কঙ্কালের <strong>করোটিকা</strong> (Cranium) অংশে থাকে। এটি করোটির মেঝের একটি গুরুত্বপূর্ণ অংশ।</p>",
+        },
+        {
+          id: 11,
+          question: "অক্ষীয় কঙ্কালের অংশ কোনটি?",
+          options: {
+            a: "করোটি",
+            b: "ক্ল্যাভিকল",
+            c: "কর্ণাস্থি",
+            d: "কার্পাল",
+          },
+          correct: "a",
+          explanation:
+            "<p><strong>করোটি</strong> (Skull) অক্ষীয় কঙ্কালের (Axial skeleton) অংশ। ক্ল্যাভিকল, কর্ণাস্থি, এবং কার্পাল উপাঙ্গীয় কঙ্কালের অংশ। (তবে, কর্ণাস্থি মাথার খুলির একটি অংশ হিসাবে অক্ষীয় কঙ্কালে অন্তর্ভুক্ত, কিন্তু অপশনে করোটি একটি বিস্তৃত এবং সুস্পষ্ট উত্তর)। প্রশ্নে 'কর্ণাস্থি' কানের ক্ষুদ্র অস্থিগুলোকে বোঝালে, সেগুলিকে করোটির একটি অংশ হিসেবে ধরা হয়। কিন্তু অপশনে 'করোটি' নিজেই বিদ্যমান থাকায় 'করোটি'ই সবচেয়ে সঠিক উত্তর।</p>",
+        },
+        {
+          id: 12,
+          question: "মুখমণ্ডলীয় অস্থিতে ভোমার এর সংখ্যা কত?",
+          options: {
+            a: "০১টি",
+            b: "০২টি",
+            c: "০৩টি",
+            d: "০৪টি",
+          },
+          correct: "a",
+          explanation:
+            "<p>মুখমণ্ডলীয় অস্থিতে <strong>ভোমার</strong> (Vomer) এর সংখ্যা <strong>০১টি</strong>। এটি নাকের সেপ্টামের নিচের অংশ গঠন করে।</p>",
+        },
+        {
+          id: 13,
+          question: "মুখমণ্ডলের আয়তাকার অস্থি কোনটি?",
+          options: {
+            a: "জাইগোম্যাটিক",
+            b: "ল্যাক্রিমাল",
+            c: "ন্যাসাল",
+            d: "প্যালেটিন",
+          },
+          correct: "c",
+          explanation:
+            "<p>মুখমণ্ডলের <strong>ন্যাসাল</strong> (Nasal) অস্থি তুলনামূলকভাবে আয়তাকার। এটি নাকের উপরের অংশ গঠন করে।</p>",
+        },
+        {
+          id: 14,
+          question: "কোস্টাল আর্চ নির্মাণ করে-",
+          options: {
+            a: "১ম থেকে ৭ম পশুকা",
+            b: "৮ম, ৯ম ও ১১শ পশুকা",
+            c: "৮ম থেকে ১০শ পশুকা",
+            d: "১১শ ও ১২শ পশুকা",
+          },
+          correct: "c",
+          explanation:
+            "<p><strong>কোস্টাল আর্চ</strong> (Costal arch) প্রধানত <strong>৮ম থেকে ১০ম পশুকা</strong> (ribs) দ্বারা নির্মিত হয়, কারণ এই পাঁজরগুলো তাদের তরুণাস্থি দ্বারা উপরের পাঁজরের তরুণাস্থির সাথে সংযুক্ত হয়।</p>",
+        },
+        {
+          id: 15,
+          question: "কোনটি করোটিকার অস্থি?",
+          options: {
+            a: "প্যারাইটাল",
+            b: "জাইগোম্যাটিক",
+            c: "স্ফেনয়েড",
+            d: "এথময়েড",
+          },
+          correct: "a",
+          explanation:
+            "<p><strong>প্যারাইটাল</strong> (Parietal) করোটিকার একটি অস্থি। জাইগোম্যাটিক একটি মুখমণ্ডলীয় অস্থি। স্ফেনয়েড এবং এথময়েড উভয়ই করোটিকার অস্থি। তবে প্রশ্নে একাধিক সঠিক উত্তর রয়েছে, যদি একটি উত্তর নির্বাচন করতে হয়, প্যারাইটাল একটি সুস্পষ্ট উদাহরণ।</p>",
+        },
+        {
+          id: 16,
+          question: "মানুষের অক্ষিকোটরের কিছু অংশজুড়ে অবস্থান করে কোন অস্থি?",
+          options: {
+            a: "ম্যাক্সিলারি",
+            b: "এথময়েড",
+            c: "জাইগোম্যাটিক",
+            d: "ল্যাক্রিমাল",
+          },
+          correct: "b",
+          explanation:
+            "<p>মানুষের অক্ষিকোটরের (Orbit) কিছু অংশজুড়ে <strong>এথময়েড</strong> (Ethmoid) অস্থি অবস্থান করে। এটি চোখের কোটরের ভেতরের দিকের প্রাচীর গঠন করে। প্রশ্নে অপশন (b) এথময়েড দেওয়া আছে, কিন্তু উত্তর ফ্রন্টাল কেন দেওয়া হয়েছে তা পরিষ্কার নয়। যদি ফ্রন্টাল (Frontal) অপশন থাকত, তাহলে সেটিও অক্ষিকোটরের একটি গুরুত্বপূর্ণ অংশ।</p>",
+        },
+        {
+          id: 17,
+          question: "“জিফয়েড প্রসেস” কোথায় অবস্থিত?",
+          options: {
+            a: "স্ক্যাপুলা",
+            b: "স্যাক্রাম",
+            c: "স্টার্নাম",
+            d: "অ্যাটলাস",
+          },
+          correct: "c",
+          explanation:
+            "<p>“<strong>জিফয়েড প্রসেস</strong>” (Xiphoid process) <strong>স্টার্নামের</strong> (Sternum) সবচেয়ে নিচের অংশ।</p>",
+        },
+        {
+          id: 18,
+          question: "করোটিকার অংশ কোনটি?",
+          options: {
+            a: "ম্যাক্সিলা",
+            b: "জাইগোম্যাটিক",
+            c: "ন্যাসাল",
+            d: "এথময়েড",
+          },
+          correct: "d",
+          explanation:
+            "<p><strong>এথময়েড</strong> (Ethmoid) করোটিকার (Cranium) অংশ। ম্যাক্সিলা, জাইগোম্যাটিক এবং ন্যাসাল মুখমণ্ডলীয় অস্থি।</p>",
+        },
+        {
+          id: 19,
+          question: "মানুষের করোটিকার অস্থি কোনটি?",
+          options: {
+            a: "স্ফেনয়েড",
+            b: "জাইগো",
+            c: "ভোমার",
+            d: "প্যালেটাইন",
+          },
+          correct: "a",
+          explanation:
+            "<p>মানুষের করোটিকার অস্থি হলো <strong>স্ফেনয়েড</strong> (Sphenoid)। জাইগোম্যাটিক, ভোমার এবং প্যালেটাইন মুখমণ্ডলীয় অস্থি।</p>",
+        },
+        {
+          id: 20,
+          question: "করোটির কোন ছিদ্রের মধ্য দিয়ে Spinal cord প্রসারিত হয়?",
+          options: {
+            a: "ট্রান্সভার্স ফোরামেন",
+            b: "অবটুরেটর ফোরামেন",
+            c: "ফোরামেন ম্যাগনাম",
+            d: "ইন্টার ভার্টিব্রাল ফোরামেন",
+          },
+          correct: "c",
+          explanation:
+            "<p>করোটির <strong>ফোরামেন ম্যাগনাম</strong> (Foramen magnum) নামক ছিদ্রের মধ্য দিয়ে স্পাইনাল কর্ড (Spinal cord) প্রসারিত হয়।</p>",
+        },
+        {
+          id: 21,
+          question: "কোন অস্থিতে জুগুলার নচ থাকে?",
+          options: {
+            a: "হিউমেরাস",
+            b: "স্টার্নাম",
+            c: "স্ক্যাপুলা",
+            d: "ক্ল্যাভিকল",
+          },
+          correct: "b",
+          explanation:
+            "<p><strong>স্টার্নামে</strong> (Sternum) <strong>জুগুলার নচ</strong> (Jugular notch) থাকে, যা ম্যানুব্রিয়ামের (Manubrium) উপরের অংশে অবস্থিত।</p>",
+        },
+        {
+          id: 22,
+          question: "করোটিকার কোন অস্থিটি ফোরামেন ম্যাগনাম বহন করে?",
+          options: {
+            a: "ফ্রন্টাল",
+            b: "প্যারাইটাল",
+            c: "অক্সিপিটাল",
+            d: "এথময়েড",
+          },
+          correct: "c",
+          explanation:
+            "<p>করোটিকার <strong>অক্সিপিটাল</strong> (Occipital) অস্থিটি <strong>ফোরামেন ম্যাগনাম</strong> (Foramen magnum) বহন করে।</p>",
+        },
+        {
+          id: 23,
+          question: "পশুকার কোন অংশটি কশেরুকার সাথে যুক্ত?",
+          options: {
+            a: "টিউবারকল",
+            b: "অ্যাঙ্গেল",
+            c: "রামাস",
+            d: "কোস্টাল কার্টিলেজ",
+          },
+          correct: "a",
+          explanation:
+            "<p>পশুকার <strong>টিউবারকল</strong> (Tubercle) অংশটি কশেরুকার (Vertebra) ট্রান্সভার্স প্রসেসের সাথে যুক্ত হয়।</p>",
+        },
+        {
+          id: 24,
+          question: "কোনটি করোটিকার জোড় অস্থি?",
+          options: {
+            a: "স্ফেনয়েড",
+            b: "অক্সিপিটাল",
+            c: "ফ্রন্টাল",
+            d: "প্যারাইটাল",
+          },
+          correct: "d",
+          explanation:
+            "<p>করোটিকার <strong>প্যারাইটাল</strong> (Parietal) অস্থিটি একটি জোড় অস্থি (এক জোড়া থাকে)। স্ফেনয়েড, অক্সিপিটাল এবং ফ্রন্টাল হলো বিজোড় অস্থি।</p>",
+        },
+        {
+          id: 25,
+          question: "মানুষের করোটি কয়টি অস্থি নিয়ে গঠিত?",
+          options: {
+            a: "১২৬টি",
+            b: "২৬টি",
+            c: "৮০টি",
+            d: "২৯টি",
+          },
+          correct: "d",
+          explanation:
+            "<p>মানুষের করোটি (Skull) মোট <strong>২৯টি</strong> অস্থি নিয়ে গঠিত (৮টি করোটিকা, ১৪টি মুখমণ্ডল, ৬টি কর্ণাস্থি এবং ১টি হাইওয়েড)।</p>",
+        },
+        {
+          id: 26,
+          question: "বক্ষপিঞ্জর গঠনকারী অস্থির সংখ্যা কয়টি?",
+          options: {
+            a: "২১টি",
+            b: "২৫টি",
+            c: "৩১টি",
+            d: "৩৬টি",
+          },
+          correct: "b",
+          explanation:
+            "<p>বক্ষপিঞ্জর (Thoracic cage) গঠনকারী অস্থির সংখ্যা <strong>২৫টি</strong>। এর মধ্যে ১২ জোড়া (২৪টি) পশুকা এবং ১টি স্টার্নাম রয়েছে।</p>",
+        },
+        {
+          id: 27,
+          question: "মানবদেহের প্যারাইটাল অস্থি কোথায় অবস্থিত?",
+          options: {
+            a: "মুখমণ্ডল",
+            b: "বক্ষপিঞ্জর",
+            c: "করোটিকা",
+            d: "বক্ষ অস্থিচক্র",
+          },
+          correct: "c",
+          explanation:
+            "<p>মানবদেহের <strong>প্যারাইটাল</strong> (Parietal) অস্থি <strong>করোটিকাতে</strong> (Cranium) অবস্থিত। এটি মাথার উপরের এবং পাশের অংশ গঠন করে।</p>",
+        },
+        {
+          id: 28,
+          question: "করোটির সর্ববৃহৎ অস্থির নাম-",
+          options: {
+            a: "হাইওয়েড",
+            b: "ম্যান্ডিবল",
+            c: "রামাস",
+            d: "ম্যাক্সিলা",
+          },
+          correct: "b",
+          explanation:
+            "<p>করোটির সর্ববৃহৎ অস্থি হলো <strong>ম্যান্ডিবল</strong> (Mandible) বা নিচের চোয়ালের অস্থি। এটি মুখমণ্ডলের একমাত্র নড়াচড়াযোগ্য অস্থি।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                  <label class="option" data-option="${option}">
+                    <div class="circle">${option}</div>
+                    <span class="option-text">${question.options[option]}</span>
+                  </label>
+                `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                     <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                     <div class="explanation-content">
+                       <div class="explanation-label">ব্যাখ্যা:</div>
+                       ${question.explanation}
+                     </div>
+                   </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                <p class="question-label">${index + 1}. ${question.question}</p>
+                <div class="options">
+                  ${optionsHTML}
+                </div>
+                ${explanationHTML}
+              `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
